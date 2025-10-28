@@ -20,9 +20,15 @@ PasswordCredentials = namedtuple('PasswordCredentials', (
     "security_token"
 ))
 
+JwtCredentials = namedtuple('JwtCredentials', (
+    "username",
+    "consumer_key",
+    "privatekey_file"
+))
+
 
 def parse_credentials(config):
-    for cls in reversed((OAuthCredentials, PasswordCredentials)):
+    for cls in reversed((OAuthCredentials, PasswordCredentials, JwtCredentials)):
         creds = cls(*(config.get(key) for key in cls._fields))
         if all(creds):
             return creds
@@ -58,6 +64,9 @@ class SalesforceAuth():
 
     @classmethod
     def from_credentials(cls, credentials, **kwargs):
+        if isinstance(credentials, JwtCredentials):
+            return SalesforceAuthJwt(credentials, **kwargs)
+
         if isinstance(credentials, OAuthCredentials):
             return SalesforceAuthOAuth(credentials, **kwargs)
 
@@ -65,7 +74,6 @@ class SalesforceAuth():
             return SalesforceAuthPassword(credentials, **kwargs)
 
         raise Exception("Invalid credentials")
-
 
 class SalesforceAuthOAuth(SalesforceAuth):
     # The minimum expiration setting for SF Refresh Tokens is 15 minutes
@@ -110,6 +118,16 @@ class SalesforceAuthOAuth(SalesforceAuth):
 
 
 class SalesforceAuthPassword(SalesforceAuth):
+    def login(self):
+        login = SalesforceLogin(
+            sandbox=self.is_sandbox,
+            **self._credentials._asdict()
+        )
+
+        self._access_token, host = login
+        self._instance_url = "https://" + host
+
+class SalesforceAuthJwt(SalesforceAuth):
     def login(self):
         login = SalesforceLogin(
             sandbox=self.is_sandbox,

@@ -17,6 +17,7 @@ from tap_salesforce.salesforce.exceptions import (
 from tap_salesforce.salesforce.credentials import (
     OAuthCredentials,
     PasswordCredentials,
+    JwtCredentials,
     parse_credentials
 )
 
@@ -39,6 +40,12 @@ OAUTH_CONFIG_KEYS = OAuthCredentials._fields
 # - password
 # - security_token
 PASSWORD_CONFIG_KEYS = PasswordCredentials._fields
+
+# Jwt:
+# - username
+# - consumer_key
+# - privatekey_file
+JWT_CONFIG_KEYS = JwtCredentials._fields
 
 CONFIG = {
     'refresh_token': None,
