@@ -23,7 +23,7 @@ PasswordCredentials = namedtuple('PasswordCredentials', (
 JwtCredentials = namedtuple('JwtCredentials', (
     "username",
     "consumer_key",
-    "privatekey_file"
+    "privatekey"
 ))
 
 
@@ -129,9 +129,13 @@ class SalesforceAuthPassword(SalesforceAuth):
 
 class SalesforceAuthJwt(SalesforceAuth):
     def login(self):
+        domain = 'test' if self.is_sandbox else None
+        privatekey = self._credentials.privatekey.replace('\\n', '\n')
         login = SalesforceLogin(
-            sandbox=self.is_sandbox,
-            **self._credentials._asdict()
+            username=self._credentials.username,
+            consumer_key=self._credentials.consumer_key,
+            privatekey=privatekey,
+            domain=domain
         )
 
         self._access_token, host = login
