@@ -130,11 +130,10 @@ class SalesforceAuthPassword(SalesforceAuth):
 class SalesforceAuthJwt(SalesforceAuth):
     def login(self):
         domain = 'test' if self.is_sandbox else None
-        privatekey = self._credentials.privatekey.replace('\\n', '\n')
         login = SalesforceLogin(
             username=self._credentials.username,
             consumer_key=self._credentials.consumer_key,
-            privatekey=privatekey,
+            privatekey=self._credentials.privatekey,
             domain=domain
         )
 
