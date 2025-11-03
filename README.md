@@ -11,6 +11,7 @@ This is a forked version of [tap-salesforce (v1.4.24)](https://github.com/singer
 Main differences from the original version:
 
 - Support for `username/password/security_token` authentication
+- Support for JWT authentication using connected apps
 - Support for concurrent execution (8 threads by default) when accessing different API endpoints to speed up the extraction process
 
 # Quickstart
@@ -53,6 +54,15 @@ pip install git+https://gitlab.com/meltano/tap-salesforce.git
 }
 ```
 
+**Required for JWT based authentication**
+```
+{
+  "username": "Account Email",
+  "consumer_key": "Connected App Consumer Key",
+  "privatekey": "Private Key (PEM format)",
+}
+```
+
 **Optional**
 ```
 {
@@ -63,6 +73,23 @@ pip install git+https://gitlab.com/meltano/tap-salesforce.git
 ```
 
 The `client_id` and `client_secret` keys are your OAuth Salesforce App secrets. The `refresh_token` is a secret created during the OAuth flow. For more info on the Salesforce OAuth flow, visit the [Salesforce documentation](https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/intro_understanding_web_server_oauth_flow.htm).
+
+For JWT authentication, the `consumer_key` is the Consumer Key from your Salesforce Connected App, and the `privatekey` should be the private key in PEM format corresponding to the certificate uploaded to your Connected App. JWT authentication is ideal for server-to-server integrations as it doesn't require user interaction.
+
+**Private Key Format Options:**
+The `privatekey` field accepts several formats:
+- **PEM format** (direct): Include the key with proper newlines (works in AWS Parameter Store)
+- **Base64 encoded**: Encode the entire PEM key as base64 (recommended for JSON config files)
+- **Escaped newlines**: Replace actual newlines with `\n` (alternative for JSON config files)
+
+Example for JSON config (base64 encoded):
+```json
+{
+  "privatekey": "LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0t..."
+}
+```
+
+For more details on JWT authentication with Salesforce, see the [Salesforce JWT documentation](https://help.salesforce.com/s/articleView?id=sf.remoteaccess_oauth_jwt_flow.htm).
 
 The `start_date` is used by the tap as a bound on SOQL queries when searching for records.  This should be an [RFC3339](https://www.ietf.org/rfc/rfc3339.txt) formatted date-time, like "2018-01-08T00:00:00Z". For more details, see the [Singer best practices for dates](https://github.com/singer-io/getting-started/blob/master/BEST_PRACTICES.md#dates).
 

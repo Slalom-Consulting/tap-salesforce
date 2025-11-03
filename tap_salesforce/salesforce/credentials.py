@@ -1,6 +1,8 @@
 import threading
 import logging
 import requests
+import base64
+import re
 from collections import namedtuple
 from simple_salesforce import SalesforceLogin
 
@@ -128,14 +130,54 @@ class SalesforceAuthPassword(SalesforceAuth):
         self._instance_url = "https://" + host
 
 class SalesforceAuthJwt(SalesforceAuth):
-    def login(self):
-        domain = 'test' if self.is_sandbox else None
-        login = SalesforceLogin(
-            username=self._credentials.username,
-            consumer_key=self._credentials.consumer_key,
-            privatekey=self._credentials.privatekey,
-            domain=domain
-        )
+    def _decode_private_key(self, private_key):
+        """
+        Decode private key from various formats:
+        1. If it contains \\n, replace with actual newlines (JSON escaped format)
+        2. If it looks like base64, decode it
+        3. If it starts with -----BEGIN and has proper newlines, assume it's already in PEM format
+        """
+        # Handle escaped newlines (from JSON) - check this first
+        if '\\n' in private_key:
+            return private_key.replace('\\n', '\n')
+        
+        # Try base64 decoding
+        try:
+            # Remove any whitespace and decode
+            decoded = base64.b64decode(private_key.replace(' ', '').replace('\n', '')).decode('utf-8')
+            if decoded.strip().startswith('-----BEGIN'):
+                return decoded
+        except Exception:
+            pass
+        
+        # If already in proper PEM format with real newlines, return as-is
+        if private_key.strip().startswith('-----BEGIN') and '\n' in private_key:
+            return private_key
+        
+        # If none of the above, assume it needs proper PEM formatting
+        # This is a fallback - might need adjustment based on your specific format
+        return private_key
 
-        self._access_token, host = login
-        self._instance_url = "https://" + host
+    def login(self):
+        try:
+            LOGGER.info("Attempting login via JWT")
+            
+            # Decode the private key to proper PEM format
+            decoded_private_key = self._decode_private_key(self._credentials.privatekey)
+            
+            domain = 'test' if self.is_sandbox else None
+            login = SalesforceLogin(
+                username=self._credentials.username,
+                consumer_key=self._credentials.consumer_key,
+                privatekey=decoded_private_key,
+                domain=domain
+            )
+
+            self._access_token, host = login
+            self._instance_url = "https://" + host
+            
+            LOGGER.info("JWT login successful")
+        except Exception as e:
+            error_message = f"JWT authentication failed: {str(e)}"
+            LOGGER.error(error_message)
+            raise Exception(error_message) from e
