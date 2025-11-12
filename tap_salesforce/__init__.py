@@ -44,7 +44,7 @@ PASSWORD_CONFIG_KEYS = PasswordCredentials._fields
 # Jwt:
 # - username
 # - consumer_key
-# - privatekey_file
+# - privatekey
 JWT_CONFIG_KEYS = JwtCredentials._fields
 
 CONFIG = {
